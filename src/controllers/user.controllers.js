@@ -3,7 +3,8 @@ const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const { sendEmail } = require('../utils/sendEmail');
 const EmailCode = require('../models/emailCode');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { error } = require('console');
 
 
 const getAll = catchError(async (req, res) => {
@@ -134,6 +135,57 @@ const logged = catchError(async (req, res) => {
   return res.json(user)
 })
 
+const reset_password = catchError(async (req, res) => {
+  const {email, frontBaseUrl } = req.body
+  const user = await User.findOne({where: {email }})
+  //Buscamos al usuario
+  if (!user) return res.status(401).json({error: "User not found"})
+
+  const code = require("crypto").randomBytes(64).toString("hex")
+
+  await EmailCode.create({code, userId: user.id})
+
+  const firstName = user.firstName
+  //send Email
+  sendEmail({
+    to: email,
+    subject: 'Update password 🆙',
+    html: `
+    <div style="max-width: 500px; margin: 50px auto; background-color: #f8fafc; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); font-family: 'Arial', sans-serif; color: #333333;">
+      
+      <h1 style="color: #007BFF; font-size: 28px; text-align: center; margin-bottom: 20px;">¡Hola ${firstName.toUpperCase()} 👋!</h1>    
+      
+      <p style="font-size: 18px; line-height: 1.6; margin-bottom: 25px; text-align: center;">Para actualizar la contraseña, por favor haga click en el siguiente enlace:</p>
+      
+      <div style="text-align: center;">
+          <a href="${frontBaseUrl}/reset_password/${code}" style="display: inline-block; background-color: #007BFF; color: #ffffff; text-align: center; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 18px;">¡Update password!</a>
+      </div>
+
+    </div>
+`
+  })
+  return res.json(user)
+
+})
+const updatePassword = catchError(async (req, res) => {
+  const { code } = req.params
+  const { password } = req.body
+
+  const codeUser = await EmailCode.findOne({where: { code }})
+  if (!codeUser) return res.status(401).json({ error: "User not found"})
+  const id = codeUser.userId
+  const user = await User.findByPk(id)
+
+  const newPassword = await bcrypt.hash(password, 10)
+
+  const userUpdate = await user.update({
+    password: newPassword }
+  )
+
+  await codeUser.destroy()
+  return res.json(codeUser)
+})
+
 module.exports = {
   getAll,
   create,
@@ -142,5 +194,7 @@ module.exports = {
   update,
   verifyUser,
   login,
-  logged
+  logged, 
+  reset_password, 
+  updatePassword
 }

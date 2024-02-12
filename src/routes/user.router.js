@@ -1,5 +1,5 @@
 const { router } = require('../app');
-const { getAll, create, getOne, remove, update, verifyUser, login, logged } = require('../controllers/user.controllers');
+const { getAll, create, getOne, remove, update, verifyUser, login, logged, reset_password, updatePassword } = require('../controllers/user.controllers');
 const express = require('express');
 const verifyJWT = require('../utils/verifyJWT');
 
@@ -15,10 +15,13 @@ routerUser.route('/login')
 routerUser.route('/me')
   .get(verifyJWT, logged)
 
+routerUser.route("/reset_password")
+  .post(reset_password)
 routerUser.route("/verify/:code")
   .get(verifyUser)
 
-
+routerUser.route("/reset_password/:code")
+  .post(updatePassword)
 
 routerUser.route('/:id')
   .get(verifyJWT, getOne)

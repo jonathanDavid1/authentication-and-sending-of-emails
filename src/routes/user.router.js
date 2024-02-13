@@ -1,4 +1,4 @@
-const { router } = require('../app');
+
 const { getAll, create, getOne, remove, update, verifyUser, login, logged, reset_password, updatePassword } = require('../controllers/user.controllers');
 const express = require('express');
 const verifyJWT = require('../utils/verifyJWT');
